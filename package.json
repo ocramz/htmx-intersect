@@ -1,0 +1,27 @@
+{
+  "name": "htmx-intersect",
+  "version": "1.0.0",
+  "description": "A lightweight HTMX extension that integrates the Intersection Observer API",
+  "main": "htmx-intersect.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:server": "node tests/server.js"
+  },
+  "keywords": [
+    "htmx",
+    "intersection-observer",
+    "infinite-scroll",
+    "lazy-loading"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "express": "^4.18.2"
+  },
+  "dependencies": {
+    "htmx.org": "^1.9.10"
+  }
+}
