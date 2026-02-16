@@ -29,8 +29,16 @@ test.describe('HTMX Intersect Extension', () => {
     // Scroll to the load trigger
     await page.locator('#load-trigger').scrollIntoViewIfNeeded();
     
-    // Wait for new content to load
-    await page.waitForTimeout(500);
+    // Wait for htmx to complete the request
+    await page.waitForResponse(response => 
+      response.url().includes('/api/load') && response.status() === 200
+    );
+    
+    // Wait for DOM update
+    await page.waitForFunction(
+      (count) => document.querySelectorAll('.item').length > count,
+      initialCount
+    );
     
     // Check that more items were added
     const newCount = await page.locator('.item').count();
@@ -83,7 +91,12 @@ test.describe('HTMX Intersect Extension', () => {
     // Load items multiple times
     for (let i = 0; i < 3; i++) {
       await page.locator('#load-trigger').scrollIntoViewIfNeeded();
-      await page.waitForTimeout(500);
+      
+      // Wait for content to load
+      await page.waitForFunction(
+        (count) => document.querySelectorAll('.item').length > count,
+        previousCount
+      );
       
       const currentCount = await page.locator('.item').count();
       expect(currentCount).toBeGreaterThan(previousCount);
@@ -104,9 +117,16 @@ test.describe('Infinite Scroll Behavior', () => {
     
     // Simulate continuous scrolling
     for (let i = 0; i < 5; i++) {
+      const beforeCount = await page.locator('.item').count();
+      
       // Scroll to load trigger
       await page.locator('#load-trigger').scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      
+      // Wait for new items to be added
+      await page.waitForFunction(
+        (count) => document.querySelectorAll('.item').length > count,
+        beforeCount
+      );
     }
     
     const finalCount = await page.locator('.item').count();
@@ -119,7 +139,12 @@ test.describe('Infinite Scroll Behavior', () => {
     
     // Load more items
     await page.locator('#load-trigger').scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
+    
+    // Wait for new items
+    await page.waitForFunction(
+      (count) => document.querySelectorAll('.item').length > count,
+      initialCount
+    );
     
     const newCount = await page.locator('.item').count();
     
