@@ -1,4 +1,6 @@
-# HTMX Intersection Observer Extension
+# htmx-intersect
+
+[![Playwright Tests](https://github.com/ocramz/htmx-intersect/actions/workflows/test.yml/badge.svg)](https://github.com/ocramz/htmx-intersect/actions/workflows/test.yml)
 
 A lightweight HTMX extension that integrates the Intersection Observer API to simplify scroll-based web experiences like lazy loading, infinite scroll, and visibility tracking.
 
