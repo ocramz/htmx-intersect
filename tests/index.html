@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Scroll Test Page</title>
+    <script src="/tests/htmx.min.js"></script>
+    <script src="/htmx-intersect.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        #content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            min-height: 150px;
+        }
+
+        .item h3 {
+            margin-bottom: 10px;
+        }
+
+        .item-data {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        .item-placeholder {
+            background: #f0f0f0;
+            color: #999;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .load-more {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .load-more.htmx-request {
+            opacity: 0.6;
+        }
+
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Infinite Scroll Test Page</h1>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="loaded-count">0</div>
+                <div class="stat-label">Items Loaded</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="visible-count">0</div>
+                <div class="stat-label">Items Visible</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="unloaded-count">0</div>
+                <div class="stat-label">Items Unloaded</div>
+            </div>
+        </div>
+
+        <div id="content">
+            <!-- Initial content -->
+            <div class="item" 
+                 data-item-id="initial-1"
+                 hx-ext="intersect"
+                 hx-trigger="intersect"
+                 intersect-unload="content"
+                 intersect-unload-delay="500"
+                 intersect-unload-placeholder="<div class='item-placeholder'>Initial item 1 unloaded</div>">
+                <h3>Initial Item 1</h3>
+                <p>This is the first item that loads with the page.</p>
+                <div class="item-data" data-loaded="true">Initial content</div>
+            </div>
+
+            <div class="item" 
+                 data-item-id="initial-2"
+                 hx-ext="intersect"
+                 hx-trigger="intersect"
+                 intersect-unload="content"
+                 intersect-unload-delay="500"
+                 intersect-unload-placeholder="<div class='item-placeholder'>Initial item 2 unloaded</div>">
+                <h3>Initial Item 2</h3>
+                <p>This is the second item that loads with the page.</p>
+                <div class="item-data" data-loaded="true">Initial content</div>
+            </div>
+        </div>
+
+        <!-- Load more trigger -->
+        <div id="load-trigger"
+             class="load-more"
+             hx-ext="intersect"
+             hx-get="/api/load?page=1&count=3"
+             hx-trigger="intersect once"
+             hx-target="#content"
+             hx-swap="beforeend"
+             intersect-margin="200px">
+            <span>Loading more items...</span>
+        </div>
+    </div>
+
+    <script>
+        // Track statistics
+        function updateStats() {
+            // Count items with loaded content
+            const loadedItems = document.querySelectorAll('.item-data[data-loaded="true"]');
+            const placeholders = document.querySelectorAll('.item-placeholder');
+            const allItems = document.querySelectorAll('.item, .item-placeholder');
+            
+            // Count visible items (simplified - just checking if they exist in DOM)
+            const visibleItems = document.querySelectorAll('.item.intersecting');
+            
+            document.getElementById('loaded-count').textContent = loadedItems.length;
+            document.getElementById('visible-count').textContent = visibleItems.length;
+            document.getElementById('unloaded-count').textContent = placeholders.length;
+        }
+
+        // Listen to intersection events
+        document.addEventListener('intersect:enter', (e) => {
+            console.log('Element entered viewport:', e.target.dataset.itemId);
+            updateStats();
+        });
+
+        document.addEventListener('intersect:exit', (e) => {
+            console.log('Element exited viewport:', e.target.dataset.itemId);
+            setTimeout(updateStats, 600); // Wait for unload delay
+        });
+
+        // Update stats when content loads
+        document.body.addEventListener('htmx:afterSwap', (e) => {
+            console.log('Content loaded');
+            updateStats();
+            
+            // Add another load trigger after content loads
+            const lastTrigger = document.getElementById('load-trigger');
+            if (lastTrigger && e.detail.target.id === 'content') {
+                // Create new load trigger
+                const currentPage = parseInt(lastTrigger.getAttribute('hx-get').match(/page=(\d+)/)?.[1] || 1);
+                const nextPage = currentPage + 1;
+                
+                const newTrigger = document.createElement('div');
+                newTrigger.id = 'load-trigger';
+                newTrigger.className = 'load-more';
+                newTrigger.setAttribute('hx-ext', 'intersect');
+                newTrigger.setAttribute('hx-get', `/api/load?page=${nextPage}&count=3`);
+                newTrigger.setAttribute('hx-trigger', 'intersect once');
+                newTrigger.setAttribute('hx-target', '#content');
+                newTrigger.setAttribute('hx-swap', 'beforeend');
+                newTrigger.setAttribute('intersect-margin', '200px');
+                newTrigger.innerHTML = '<span>Loading more items...</span>';
+                
+                lastTrigger.replaceWith(newTrigger);
+                
+                // Reinitialize htmx for the new element
+                htmx.process(newTrigger);
+            }
+        });
+
+        // Initial stats
+        updateStats();
+        
+        // Periodic stats update
+        setInterval(updateStats, 500);
+    </script>
+</body>
+</html>
